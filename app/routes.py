@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel
 import paramiko
-from app.db import insert_task, update_task_status, insert_log, get_task_status, validate_token
+from models import insert_task, update_task_status, insert_log, get_task_status, validate_token
 
 router = APIRouter()
 
