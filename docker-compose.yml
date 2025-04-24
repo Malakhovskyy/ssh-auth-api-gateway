@@ -9,8 +9,6 @@ services:
       - ./data:/data
     expose:
       - "8000"
-    depends_on:
-      - nginx
     environment:
       - PYTHONUNBUFFERED=1
     env_file:
