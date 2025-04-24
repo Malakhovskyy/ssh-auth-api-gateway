@@ -13,7 +13,7 @@ class TaskPayload(BaseModel):
     system_username: str
     system_ssh_key: str
     ssh_key_password: str | None = None
-    user_password: str
+    user_password: str | None = None
     task_type: str
 
 @router.post("/post_task/{task_id}")
