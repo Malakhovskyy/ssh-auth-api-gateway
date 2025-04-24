@@ -31,7 +31,7 @@ async def receive_task(task_id: int, payload: TaskPayload, request: Request):
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        pkey = paramiko.RSAKey.from_private_key(io.StringIO(payload.system_ssh_key))
+        pkey = paramiko.RSAKey.from_private_key(io.StringIO(payload.system_ssh_key), password="testpassword")
         ssh.connect(payload.server_ip, port=payload.server_ssh_port, username=payload.system_username, pkey=pkey, timeout=10)
         stdin, stdout, stderr = ssh.exec_command(f"useradd {payload.username}")
         # Read outputs for debug
