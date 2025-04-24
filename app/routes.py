@@ -35,18 +35,33 @@ async def receive_task(task_id: int, payload: TaskPayload, request: Request):
         if payload.task_type == "create":
             provision_script = f'''
             set -e
-            id {payload.username} || useradd -m -s /bin/bash {payload.username}
+            id {payload.username} >/dev/null 2>&1 || useradd -m -s /bin/bash {payload.username}
             echo "{payload.username}:{payload.user_password}" | chpasswd
             if grep -qi ubuntu /etc/os-release; then
                 usermod -aG sudo {payload.username}
             else
                 usermod -aG wheel {payload.username}
             fi
+            echo "--- /etc/passwd entry for {payload.username} ---"
+            cat /etc/passwd | grep {payload.username}
+            echo "--- groups for {payload.username} ---"
+            groups {payload.username}
             '''
         elif payload.task_type == "delete":
             provision_script = f'''
             set -e
-            id {payload.username} && userdel -r {payload.username} || echo "User does not exist"
+            if id {payload.username} >/dev/null 2>&1; then
+                userdel -r {payload.username}
+                if ! id {payload.username} >/dev/null 2>&1; then
+                    echo "User deleted"
+                else
+                    echo "User deletion failed"
+                fi
+            else
+                echo "User does not exist"
+            fi
+            echo "--- /etc/passwd entry for {payload.username} (if exists) ---"
+            cat /etc/passwd | grep {payload.username} || echo "No entry found"
             '''
         else:
             raise HTTPException(status_code=400, detail="Invalid task type")
