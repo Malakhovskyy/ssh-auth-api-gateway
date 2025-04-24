@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  gateway-proxy:
+    build: .
+    container_name: gateway-proxy
+    volumes:
+      - ./app:/app
+      - ./data:/data
+    expose:
+      - "8000"
+    depends_on:
+      - nginx
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: gateway-proxy-nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    ports:
+      - "443:443"
+    depends_on:
+      - gateway-proxy
+    restart: unless-stopped
+
+volumes:
+  certs:
