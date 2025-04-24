@@ -14,6 +14,7 @@ class TaskPayload(BaseModel):
     system_ssh_key: str
     ssh_key_password: str | None = None
     user_password: str
+    task_type: str
 
 @router.post("/post_task/{task_id}")
 async def receive_task(task_id: int, payload: TaskPayload, request: Request):
@@ -31,17 +32,24 @@ async def receive_task(task_id: int, payload: TaskPayload, request: Request):
         )
         ssh.connect(payload.server_ip, port=payload.server_ssh_port, username=payload.system_username, pkey=pkey, timeout=10)
 
-        # Build compound provisioning command
-        provision_script = f'''
-        set -e
-        id {payload.username} || useradd -m -s /bin/bash {payload.username}
-        echo "{payload.username}:{payload.user_password}" | chpasswd
-        if grep -qi ubuntu /etc/os-release; then
-            usermod -aG sudo {payload.username}
-        else
-            usermod -aG wheel {payload.username}
-        fi
-        '''
+        if payload.task_type == "create":
+            provision_script = f'''
+            set -e
+            id {payload.username} || useradd -m -s /bin/bash {payload.username}
+            echo "{payload.username}:{payload.user_password}" | chpasswd
+            if grep -qi ubuntu /etc/os-release; then
+                usermod -aG sudo {payload.username}
+            else
+                usermod -aG wheel {payload.username}
+            fi
+            '''
+        elif payload.task_type == "delete":
+            provision_script = f'''
+            set -e
+            id {payload.username} && userdel -r {payload.username} || echo "User does not exist"
+            '''
+        else:
+            raise HTTPException(status_code=400, detail="Invalid task type")
 
         stdin, stdout, stderr = ssh.exec_command(provision_script)
         # Read outputs for debug
