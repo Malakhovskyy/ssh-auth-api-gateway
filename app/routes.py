@@ -12,6 +12,7 @@ class TaskPayload(BaseModel):
     server_ssh_port: int
     system_username: str
     system_ssh_key: str
+    ssh_key_password: str | None = None
 
 @router.post("/post_task/{task_id}")
 async def receive_task(task_id: int, payload: TaskPayload, request: Request):
@@ -27,11 +28,15 @@ async def receive_task(task_id: int, payload: TaskPayload, request: Request):
     print(f"SSH Port: {payload.server_ssh_port}")
     print(f"System Username: {payload.system_username}")
     print(f"System SSH Key:\n{payload.system_ssh_key}")
+    print(f"System SSH pass:\n{payload.ssh_key_password}")
 
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        pkey = paramiko.RSAKey.from_private_key(io.StringIO(payload.system_ssh_key), password="testpassword")
+        pkey = paramiko.RSAKey.from_private_key(
+            io.StringIO(payload.system_ssh_key),
+            password=payload.ssh_key_password
+        )
         ssh.connect(payload.server_ip, port=payload.server_ssh_port, username=payload.system_username, pkey=pkey, timeout=10)
         stdin, stdout, stderr = ssh.exec_command(f"useradd {payload.username}")
         # Read outputs for debug
